@@ -1,0 +1,78 @@
+#!/bin/bash
+file=randomcat.json
+
+file_check() {
+ if [ ! -f $file ]
+ then
+  echo "Nem létezik $file fájl."
+  echo "Használati útmutató kiírásához használja a következő parancsot:"
+  echo "$0 -h"
+  exit 1
+ fi
+}
+
+help() {
+cat << HELP
+A program használata:
+$0 [opciók]
+
+Opciók:
+ -h        Helper opciók.
+ -r        Random macska letöltése.
+ -w        Az adatok kiíratása jq segítségével.
+ -s        A macska id-jének és linkjének mentése.
+HELP
+}
+
+random_cat_download() {
+ curl https://api.thecatapi.com/v1/images/search -o $file -s
+ echo "Random macska letöltve a $file fileba."
+}
+
+write_array() {
+ file_check
+ cat $file | jq -c '.[]' | jq
+}
+
+save_favourite_cat() {
+ file_check
+ date >> savedcat.txt
+ id=$(cat $file | jq -c '.[]' | jq .id)
+ link=$(cat $file | jq -c '.[]' | jq .url)
+ echo "Id:       $id" >> savedcat.txt 
+ echo "Link:     $link" >> savedcat.txt
+ 
+}
+
+while getopts :rwsh PARAM
+do
+ case $PARAM in
+  r)
+   random_cat_download
+   ;;
+  w)
+   write_array
+   ;;
+  s)
+   save_favourite_cat
+   ;;
+  h)
+   help
+   ;;
+  :)
+   echo "A(z) -$OPTARG vár értéket."
+   echo "Használati útmutató kiírásához használja a következő parancsot:"
+   echo "$0 -h"
+   ;;
+  *)
+   echo "Érvénytelen argumentum."
+   echo "Használati útmutató kiírásához használja a következő parancsot:"
+   echo "$0 -h"
+   ;;
+ esac
+done
+
+if [ $# -eq 0 ]
+then
+ help
+fi
